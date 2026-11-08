@@ -1,0 +1,44 @@
+name: Build unsigned IPA
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show Xcode and scheme
+        run: |
+          xcodebuild -version
+          xcodebuild -list -project ThreeOneOSFive.xcodeproj
+
+      - name: Build
+        run: |
+          xcodebuild -project ThreeOneOSFive.xcodeproj -scheme 3105 \
+            -configuration Release -sdk iphoneos \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Package unsigned IPA
+        run: |
+          APP="$RUNNER_TEMP/DerivedData/Build/Products/Release-iphoneos/3105.app"
+          mkdir Payload
+          cp -R "$APP" Payload/
+          V=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist")
+          B=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist")
+          zip -qry "3105-${V}-build${B}-unsigned.ipa" Payload
+          ls -lh *.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 3105-unsigned-ipa
+          path: '*.ipa'
+          if-no-files-found: error

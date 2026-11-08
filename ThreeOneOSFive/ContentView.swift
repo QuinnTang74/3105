@@ -7,8 +7,8 @@ struct ContentView: View {
     @EnvironmentObject private var patchDraftCoordinator: PatchDraftCoordinator
     @EnvironmentObject private var patchStore: PatchProjectStore
     @EnvironmentObject private var repositoryStore: PackageRepositoryStore
-    @AppStorage(FeatureVisibility.developerModeStorageKey)
-    private var developerModeEnabled = false
+    @AppStorage(TabBarSelection.storageKey)
+    private var tabBarSelectionRaw = TabBarSelection.defaultRaw
     @State private var tabNavigation: AppTabNavigationState
     @State private var showSettings = false
     @State private var showLogs = false
@@ -22,13 +22,16 @@ struct ContentView: View {
         } else if arguments.contains("--simulate-sources-tab") {
             initialTab = 2
         } else if arguments.contains("--simulate-installed-tab")
-                    || arguments.contains("--simulate-patch-tab")
-                    || arguments.contains("--simulate-wallpaper-tab") {
+                    || arguments.contains("--simulate-patch-tab") {
             initialTab = 3
         } else if arguments.contains("--simulate-files-tab") {
             initialTab = 4
         } else if arguments.contains("--simulate-search-tab") {
             initialTab = 5
+        } else if arguments.contains("--simulate-cleaner-tab") {
+            initialTab = 6
+        } else if arguments.contains("--simulate-wallpaper-tab") {
+            initialTab = 7
         } else {
             initialTab = 0
         }
@@ -57,7 +60,7 @@ struct ContentView: View {
         .onChange(of: patchDraftCoordinator.importRequest?.id) { requestID in
             if requestID != nil { tabNavigation.select(AppSection.installed.rawValue) }
         }
-        .onChange(of: developerModeEnabled) { _ in
+        .onChange(of: tabBarSelectionRaw) { _ in
             tabNavigation.reconcileSelection(with: featureVisibility)
         }
         .onAppear {
@@ -152,6 +155,13 @@ struct ContentView: View {
                 onOpenSettings: openSettings,
                 onOpenLogs: openLogs
             )
+        case .cleaner:
+            CleanerView()
+        case .wallpapers:
+            WallpaperLabView(
+                onOpenSettings: openSettings,
+                onOpenLogs: openLogs
+            )
         }
     }
 
@@ -170,17 +180,12 @@ struct ContentView: View {
     }
 
     private var featureVisibility: FeatureVisibility {
-        FeatureVisibility(developerModeEnabled: developerModeActive)
-    }
-
-    private var developerModeActive: Bool {
-#if targetEnvironment(simulator)
-        developerModeEnabled
-            || ProcessInfo.processInfo.arguments.contains("--simulate-developer-mode")
-            || ProcessInfo.processInfo.arguments.contains("--simulate-files-tab")
-#else
-        developerModeEnabled
-#endif
+        FeatureVisibility(
+            selectedSections: TabBarSelection.sections(from: tabBarSelectionRaw),
+            wallpapersSupported: WallpaperFeatureSupportPolicy.isSupported(
+                major: AppInfo.versionTuple.major
+            )
+        )
     }
 
     private var selectedVisibleSection: AppSection {
@@ -218,26 +223,3 @@ private struct CompactTabLabel: View {
     }
 }
 
-private extension AppSection {
-    var titleKey: String {
-        switch self {
-        case .home: return "tab.home"
-        case .new: return "tab.new"
-        case .sources: return "tab.sources"
-        case .installed: return "tab.installed"
-        case .files: return "tab.files"
-        case .search: return "tab.search"
-        }
-    }
-
-    var systemImage: String {
-        switch self {
-        case .home: return "house.fill"
-        case .new: return "clock.fill"
-        case .sources: return "shippingbox.fill"
-        case .installed: return "tray.full.fill"
-        case .files: return "folder.fill"
-        case .search: return "magnifyingglass"
-        }
-    }
-}

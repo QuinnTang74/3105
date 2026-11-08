@@ -42,3 +42,6 @@ DerivedData/
 *.tmp
 *.swp
 *~
+
+# lrnev local governance
+.lrnev/

@@ -665,5 +665,8 @@
 "repository.source_empty" = "This source has no available packages. Enable or refresh it and try again.";
 "settings.developer_mode" = "Developer Mode";
 "settings.developer_mode_footer" = "Developer Mode adds Files to the main navigation. Files can browse and modify application containers.";
+"settings.tab_bar" = "Tab Bar";
+"settings.tab_bar_footer" = "%lld of %lld slots used. Turn one off to swap in another.";
+"settings.tab_bar_fixed" = "Fixed";
 "wallpaper.package_details" = "Package Details";
 "wallpaper.package_files" = "%lld files";

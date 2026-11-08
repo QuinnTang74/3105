@@ -7,8 +7,60 @@ enum AppSection: Int, CaseIterable, Identifiable {
     case installed
     case files
     case search
+    case cleaner
+    case wallpapers
 
     var id: Int { rawValue }
+}
+
+extension AppSection {
+    var titleKey: String {
+        switch self {
+        case .home: return "tab.home"
+        case .new: return "tab.new"
+        case .sources: return "tab.sources"
+        case .installed: return "tab.installed"
+        case .files: return "tab.files"
+        case .search: return "tab.search"
+        case .cleaner: return "tab.cleaner"
+        case .wallpapers: return "tab.wallpapers"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .home: return "house.fill"
+        case .new: return "clock.fill"
+        case .sources: return "shippingbox.fill"
+        case .installed: return "tray.full.fill"
+        case .files: return "folder.fill"
+        case .search: return "magnifyingglass"
+        case .cleaner: return "sparkles"
+        case .wallpapers: return "photo.on.rectangle.angled"
+        }
+    }
+}
+
+enum TabBarSelection {
+    static let storageKey = "tabbar.selection"
+    static let maxSections = 5
+    /// home(0), new(1), sources(2), installed(3), files(4)
+    static let defaultRaw = "0,1,2,3,4"
+
+    static func sections(from raw: String) -> [AppSection] {
+        let selected = Set(raw.split(separator: ",").compactMap { Int($0) })
+        var result = AppSection.allCases.filter { section in
+            section == .home || selected.contains(section.rawValue)
+        }
+        if result.count > maxSections {
+            result = Array(result.prefix(maxSections))
+        }
+        return result
+    }
+
+    static func encode(_ sections: [AppSection]) -> String {
+        sections.map { String($0.rawValue) }.joined(separator: ",")
+    }
 }
 
 enum WallpaperFeatureSupportPolicy {
@@ -34,25 +86,18 @@ struct OneShotPresentationGate: Equatable {
 
 struct FeatureVisibility: Equatable {
     static let cleanerStorageKey = "feature.cleaner.enabled"
-    static let developerModeStorageKey = "feature.developer_mode.enabled"
 
-    let developerModeEnabled: Bool
-
-    init(developerModeEnabled: Bool) {
-        self.developerModeEnabled = developerModeEnabled
-    }
+    let selectedSections: [AppSection]
+    let wallpapersSupported: Bool
 
     var visibleSections: [AppSection] {
-        AppSection.allCases.filter(isVisible)
+        selectedSections.filter { section in
+            section != .wallpapers || wallpapersSupported
+        }
     }
 
     func isVisible(_ section: AppSection) -> Bool {
-        switch section {
-        case .files:
-            return developerModeEnabled
-        default:
-            return true
-        }
+        visibleSections.contains(section)
     }
 }
 

@@ -665,5 +665,8 @@
 "repository.source_empty" = "此软件源暂无可用软件包。请启用或刷新后重试。";
 "settings.developer_mode" = "开发者模式";
 "settings.developer_mode_footer" = "开发者模式会在主导航中添加“文件”。“文件”可以浏览和修改应用容器。";
+"settings.tab_bar" = "底栏项目";
+"settings.tab_bar_footer" = "已选 %lld/%lld 个。选满后需先关闭一个才能换入其他入口。";
+"settings.tab_bar_fixed" = "固定";
 "wallpaper.package_details" = "软件包详情";
 "wallpaper.package_files" = "%lld 个文件";

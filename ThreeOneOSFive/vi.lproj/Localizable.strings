@@ -665,5 +665,8 @@
 "repository.source_empty" = "Nguồn này chưa có gói khả dụng. Hãy bật hoặc làm mới nguồn rồi thử lại.";
 "settings.developer_mode" = "Chế độ nhà phát triển";
 "settings.developer_mode_footer" = "Chế độ nhà phát triển thêm mục Tệp vào thanh điều hướng chính. Tệp có thể duyệt và chỉnh sửa container ứng dụng.";
+"settings.tab_bar" = "Thanh tab";
+"settings.tab_bar_footer" = "Đã dùng %lld/%lld vị trí. Tắt một mục để thay bằng mục khác.";
+"settings.tab_bar_fixed" = "Cố định";
 "wallpaper.package_details" = "Chi tiết gói";
 "wallpaper.package_files" = "%lld tệp";

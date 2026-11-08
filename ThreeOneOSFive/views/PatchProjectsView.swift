@@ -17,7 +17,6 @@ struct PatchProjectsView: View {
     @Environment(\.appLanguage) private var language
     @EnvironmentObject private var draftCoordinator: PatchDraftCoordinator
     @EnvironmentObject private var store: PatchProjectStore
-    @AppStorage(FeatureVisibility.cleanerStorageKey) private var cleanerEnabled = true
     @State private var showCreate = false
     @State private var showImporter = false
     @State private var showWallpaperImporter = false
@@ -145,10 +144,8 @@ struct PatchProjectsView: View {
                             }
                         }
                     }
-                    if cleanerEnabled {
-                        Section(language.text("repository.utilities")) {
-                            cleanerRow
-                        }
+                    Section(language.text("repository.utilities")) {
+                        cleanerRow
                     }
                 }
                 .listStyle(.insetGrouped)

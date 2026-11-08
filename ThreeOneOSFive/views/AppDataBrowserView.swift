@@ -16,15 +16,18 @@ struct AppDataBrowserView: View {
     @Binding private var tabSession: FilesTabSession
     let onOpenSettings: () -> Void
     let onOpenLogs: () -> Void
+    private let embedded: Bool
 
     init(
         tabSession: Binding<FilesTabSession>,
         onOpenSettings: @escaping () -> Void = {},
-        onOpenLogs: @escaping () -> Void = {}
+        onOpenLogs: @escaping () -> Void = {},
+        embedded: Bool = false
     ) {
         _tabSession = tabSession
         self.onOpenSettings = onOpenSettings
         self.onOpenLogs = onOpenLogs
+        self.embedded = embedded
     }
 
     private var filteredApps: [InstalledApp] {
@@ -47,8 +50,39 @@ struct AppDataBrowserView: View {
     }
 
     var body: some View {
-        navigationContent(tabID: tabSession.selectedTabID)
-            .id(tabSession.selectedTabID)
+        Group {
+            if embedded {
+                embeddedContent
+            } else {
+                navigationContent(tabID: tabSession.selectedTabID)
+                    .id(tabSession.selectedTabID)
+            }
+        }
+    }
+
+    private var embeddedContent: some View {
+        appList
+            .navigationTitle(language.text("browser.application"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button { reload() } label: {
+                        if isResolving {
+                            ProgressView()
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                    }
+                    .disabled(isResolving)
+                    .accessibilityLabel(language.text("browser.retry"))
+                }
+            }
+            .onAppear {
+                if !hasLoaded {
+                    hasLoaded = true
+                    reload()
+                }
+            }
     }
 
     private func navigationContent(tabID: UUID) -> some View {
@@ -132,7 +166,7 @@ struct AppDataBrowserView: View {
 
     private var appRows: some View {
         List {
-            if let workspaceURL {
+            if !embedded, let workspaceURL {
                 Section(language.text("browser.workspace")) {
                     let workspaceDestination = FileBrowserDestination(
                         containerPath: workspaceURL.path,
@@ -436,5 +470,355 @@ struct BrowserAppIcon: View {
                 }
             }
         }
+    }
+}
+
+enum FilesRootLocation: String, CaseIterable, Identifiable {
+    case application
+    case appGroup
+    case systemAppGroup
+
+    var id: String { rawValue }
+
+    var titleKey: String {
+        switch self {
+        case .application: return "browser.application"
+        case .appGroup: return "browser.app_group"
+        case .systemAppGroup: return "browser.system_app_group"
+        }
+    }
+
+    var detailKey: String? {
+        switch self {
+        case .application: return "browser.application_detail"
+        case .appGroup: return "browser.app_group_detail"
+        case .systemAppGroup: return nil
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .application: return "square.stack.3d.up.fill"
+        case .appGroup: return "person.2.fill"
+        case .systemAppGroup: return "gearshape.2.fill"
+        }
+    }
+}
+
+struct FilesHomeView: View {
+    @Environment(\.appLanguage) private var language
+    @Binding private var tabSession: FilesTabSession
+    let onOpenSettings: () -> Void
+    let onOpenLogs: () -> Void
+    @State private var workspaceURL: URL?
+
+    init(
+        tabSession: Binding<FilesTabSession>,
+        onOpenSettings: @escaping () -> Void = {},
+        onOpenLogs: @escaping () -> Void = {}
+    ) {
+        _tabSession = tabSession
+        self.onOpenSettings = onOpenSettings
+        self.onOpenLogs = onOpenLogs
+    }
+
+    var body: some View {
+        NavigationStack(path: navigationPath) {
+            List {
+                if let workspaceURL {
+                    Section(language.text("browser.workspace")) {
+                        NavigationLink(
+                            value: FileBrowserDestination(
+                                containerPath: workspaceURL.path,
+                                startPath: workspaceURL.path,
+                                title: "3105",
+                                bundleID: nil
+                            )
+                        ) {
+                            HStack(spacing: 10) {
+                                AppRowIcon(systemName: "folder.fill")
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("3105")
+                                        .font(.subheadline.weight(.semibold))
+                                    Text(language.text("browser.workspace_subtitle"))
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            .padding(.vertical, 2)
+                        }
+                    }
+                }
+
+                Section {
+                    ForEach(FilesRootLocation.allCases) { location in
+                        NavigationLink {
+                            destinationView(for: location)
+                        } label: {
+                            HStack(spacing: 10) {
+                                AppRowIcon(systemName: location.systemImage)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(language.text(location.titleKey))
+                                        .font(.subheadline.weight(.semibold))
+                                    if let detailKey = location.detailKey {
+                                        Text(language.text(detailKey))
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 2)
+                        }
+                    }
+                } header: {
+                    Text(language.text("browser.application_locations"))
+                } footer: {
+                    Text(language.text("browser.application_access_note"))
+                }
+
+                Section {
+                    NavigationLink {
+                        FileFavoritesView(tabSession: $tabSession)
+                    } label: {
+                        Label(language.text("browser.favorites"), systemImage: "star.fill")
+                    }
+                } header: {
+                    Text(language.text("browser.favorites"))
+                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle(language.text("browser.tabs_root"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    FilesTabToolbarButton(session: $tabSession)
+                }
+                AppUtilityToolbar(
+                    language: language,
+                    onOpenSettings: onOpenSettings,
+                    onOpenLogs: onOpenLogs
+                )
+            }
+            .onAppear {
+                if workspaceURL == nil {
+                    workspaceURL = try? PatchWorkspaceService.documentsRootURL()
+                    _ = try? PatchWorkspaceService.patchesRootURL()
+                }
+            }
+            .navigationDestination(for: FileBrowserDestination.self) { destination in
+                if destination.startPath == destination.containerPath {
+                    FileBrowserView(
+                        containerPath: destination.containerPath,
+                        title: destination.title,
+                        bundleID: destination.bundleID,
+                        filesTabSession: $tabSession
+                    )
+                } else {
+                    FileBrowserView(
+                        containerPath: destination.containerPath,
+                        startPath: destination.startPath,
+                        title: destination.title,
+                        bundleID: destination.bundleID,
+                        filesTabSession: $tabSession
+                    )
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func destinationView(for location: FilesRootLocation) -> some View {
+        switch location {
+        case .application:
+            AppDataBrowserView(
+                tabSession: $tabSession,
+                onOpenSettings: onOpenSettings,
+                onOpenLogs: onOpenLogs,
+                embedded: true
+            )
+        case .appGroup:
+            SharedContainerBrowser(
+                mode: .appGroup,
+                tabSession: $tabSession,
+                onOpenSettings: onOpenSettings,
+                onOpenLogs: onOpenLogs
+            )
+        case .systemAppGroup:
+            SharedContainerBrowser(
+                mode: .systemAppGroup,
+                tabSession: $tabSession,
+                onOpenSettings: onOpenSettings,
+                onOpenLogs: onOpenLogs
+            )
+        }
+    }
+
+    private var navigationPath: Binding<[FileBrowserDestination]> {
+        Binding(
+            get: { tabSession.navigationPath(for: tabSession.selectedTabID) },
+            set: { tabSession.setNavigationPath($0, for: tabSession.selectedTabID) }
+        )
+    }
+}
+
+struct SharedContainerBrowser: View {
+    enum Mode: Hashable {
+        case appGroup
+        case systemAppGroup
+
+        var parentPath: String {
+            switch self {
+            case .appGroup: return "/var/mobile/Containers/Shared/AppGroup"
+            case .systemAppGroup: return "/var/containers/Shared/SystemGroup"
+            }
+        }
+
+        var titleKey: String {
+            switch self {
+            case .appGroup: return "browser.app_group"
+            case .systemAppGroup: return "browser.system_app_group"
+            }
+        }
+    }
+
+    @Environment(\.appLanguage) private var language
+    let mode: Mode
+    @Binding var tabSession: FilesTabSession
+    let onOpenSettings: () -> Void
+    let onOpenLogs: () -> Void
+
+    @State private var containers: [SharedContainer] = []
+    @State private var hasLoaded = false
+    @State private var accessFailed = false
+
+    var body: some View {
+        List {
+            if containers.isEmpty {
+                if hasLoaded {
+                    Text(language.text("browser.shared_containers_access_note"))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                ForEach(containers) { container in
+                    NavigationLink(
+                        value: FileBrowserDestination(
+                            containerPath: container.path,
+                            startPath: container.path,
+                            title: container.name,
+                            bundleID: nil
+                        )
+                    ) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(container.name)
+                                .font(.subheadline.weight(.semibold))
+                            Text(container.path)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .navigationTitle(language.text(mode.titleKey))
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear { load() }
+    }
+
+    private func load() {
+        guard !hasLoaded else { return }
+        hasLoaded = true
+        let parent = mode.parentPath
+        guard let entries = try? FileManager.default.contentsOfDirectory(atPath: parent) else {
+            accessFailed = true
+            return
+        }
+        containers = entries.compactMap { entry in
+            let path = (parent as NSString).appendingPathComponent(entry)
+            var isDirectory: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory),
+                  isDirectory.boolValue else { return nil }
+            let name = Self.groupIdentifier(at: path) ?? entry
+            return SharedContainer(id: path, name: name, path: path)
+        }
+        .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    private static func groupIdentifier(at path: String) -> String? {
+        let metadataPath = (path as NSString)
+            .appendingPathComponent(".com.apple.mobile_container_manager.metadata.plist")
+        guard let metadata = NSDictionary(contentsOfFile: metadataPath) else { return nil }
+        return metadata["MCMMetadataIdentifier"] as? String
+    }
+}
+
+struct SharedContainer: Identifiable {
+    let id: String
+    let name: String
+    let path: String
+}
+
+struct FileFavoritesView: View {
+    @Environment(\.appLanguage) private var language
+    @Binding var tabSession: FilesTabSession
+    @ObservedObject private var store = FileFavoritesStore.shared
+
+    var body: some View {
+        List {
+            if store.favorites.isEmpty {
+                Text(language.text("browser.favorites_empty"))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(store.favorites) { favorite in
+                    NavigationLink(value: destination(for: favorite)) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(favorite.name)
+                                .font(.subheadline.weight(.semibold))
+                            Text(favorite.path)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button(role: .destructive) {
+                            store.remove(path: favorite.path)
+                        } label: {
+                            Label(language.text("browser.delete"), systemImage: "trash")
+                        }
+                    }
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .navigationTitle(language.text("browser.favorites"))
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func destination(for favorite: FileFavorite) -> FileBrowserDestination {
+        FileBrowserDestination(
+            containerPath: Self.containerRoot(for: favorite.path),
+            startPath: favorite.path,
+            title: favorite.name,
+            bundleID: nil
+        )
+    }
+
+    private static func containerRoot(for path: String) -> String {
+        let roots = [
+            "/var/mobile/Containers/Data/Application/",
+            "/var/mobile/Containers/Shared/AppGroup/",
+            "/var/containers/Shared/SystemGroup/"
+        ]
+        for root in roots {
+            guard let range = path.range(of: root) else { continue }
+            let remainder = path[range.upperBound...]
+            guard let component = remainder.split(separator: "/").first else { continue }
+            return root + component
+        }
+        return path
     }
 }

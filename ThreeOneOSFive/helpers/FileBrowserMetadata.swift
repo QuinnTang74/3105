@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 enum FileBrowserSortOrder: String, CaseIterable, Identifiable {
     static let storageKey = "browser.sort.order"
@@ -85,6 +86,64 @@ enum FileBrowserSortPolicy {
 
             return nameOrder == .orderedAscending
         }
+    }
+}
+
+struct FileFavorite: Codable, Identifiable, Hashable {
+    let id: UUID
+    let path: String
+    let name: String
+}
+
+final class FileFavoritesStore: ObservableObject {
+    static let shared = FileFavoritesStore()
+    static let storageKey = "fileBrowserFavorites"
+
+    @Published private(set) var favorites: [FileFavorite] = []
+
+    private let defaults: UserDefaults
+    private let encoder = JSONEncoder()
+    private let decoder = JSONDecoder()
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        load()
+    }
+
+    func load() {
+        guard let data = defaults.data(forKey: Self.storageKey) else {
+            favorites = []
+            return
+        }
+        favorites = (try? decoder.decode([FileFavorite].self, from: data)) ?? []
+    }
+
+    func add(path: String, name: String) {
+        let normalized = Self.normalize(path)
+        guard !normalized.isEmpty, !contains(path: normalized) else { return }
+        favorites.append(FileFavorite(id: UUID(), path: normalized, name: name))
+        save()
+    }
+
+    func remove(path: String) {
+        let normalized = Self.normalize(path)
+        favorites.removeAll { $0.path == normalized }
+        save()
+    }
+
+    func contains(path: String) -> Bool {
+        let normalized = Self.normalize(path)
+        return favorites.contains { $0.path == normalized }
+    }
+
+    private func save() {
+        guard let data = try? encoder.encode(favorites) else { return }
+        defaults.set(data, forKey: Self.storageKey)
+    }
+
+    private static func normalize(_ path: String) -> String {
+        guard path.count > 1, path.hasSuffix("/") else { return path }
+        return String(path.dropLast())
     }
 }
 

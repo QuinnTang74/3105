@@ -437,6 +437,22 @@ struct FileBrowserView: View {
             }
             Divider()
         }
+        if entry.isDirectory {
+            let isFavorite = FileFavoritesStore.shared.contains(path: entry.path)
+            Button {
+                if isFavorite {
+                    FileFavoritesStore.shared.remove(path: entry.path)
+                } else {
+                    FileFavoritesStore.shared.add(path: entry.path, name: entry.name)
+                }
+            } label: {
+                Label(
+                    language.text(isFavorite ? "browser.favorite_remove" : "browser.favorite_add"),
+                    systemImage: isFavorite ? "star.slash" : "star"
+                )
+            }
+            Divider()
+        }
         Button {
             selectedEntryIDs = [entry.id]
             isSelecting = true

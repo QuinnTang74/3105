@@ -146,7 +146,7 @@ struct ContentView: View {
                 onOpenLogs: openLogs
             )
         case .files:
-            AppDataBrowserView(
+            FilesHomeView(
                 tabSession: filesTabSession,
                 onOpenSettings: openSettings,
                 onOpenLogs: openLogs

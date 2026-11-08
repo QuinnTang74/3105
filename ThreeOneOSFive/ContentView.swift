@@ -64,6 +64,7 @@ struct ContentView: View {
             tabNavigation.reconcileSelection(with: featureVisibility)
         }
         .onAppear {
+            migrateLegacyTabBarDefault()
             tabNavigation.reconcileSelection(with: featureVisibility)
         }
         .sheet(isPresented: $showSettings) { SettingsView() }
@@ -186,6 +187,11 @@ struct ContentView: View {
                 major: AppInfo.versionTuple.major
             )
         )
+    }
+
+    private func migrateLegacyTabBarDefault() {
+        guard tabBarSelectionRaw == TabBarSelection.legacyDefaultRaw else { return }
+        tabBarSelectionRaw = TabBarSelection.defaultRaw
     }
 
     private var selectedVisibleSection: AppSection {

@@ -44,8 +44,9 @@ extension AppSection {
 enum TabBarSelection {
     static let storageKey = "tabbar.selection"
     static let maxSections = 5
-    /// home(0), new(1), sources(2), installed(3), files(4)
-    static let defaultRaw = "0,1,2,3,4"
+    /// home(0), new(1), installed(3), files(4), cleaner(6)
+    static let defaultRaw = "0,1,3,4,6"
+    static let legacyDefaultRaw = "0,1,2,3,4"
 
     static func sections(from raw: String) -> [AppSection] {
         let selected = Set(raw.split(separator: ",").compactMap { Int($0) })

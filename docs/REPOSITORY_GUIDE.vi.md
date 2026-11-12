@@ -1,14 +1,14 @@
-# Định dạng kho 3105 v1
+# Định dạng kho 3106 v1
 
-Kho 3105 là một tệp JSON công khai qua HTTPS. Ứng dụng đọc metadata
+Kho 3106 là một tệp JSON công khai qua HTTPS. Ứng dụng đọc metadata
 trong kho, nhưng vẫn coi toàn bộ dữ liệu và gói tải xuống là không đáng tin cậy.
 
 ## Danh sách nguồn mặc định
 
-3105 đồng bộ danh sách nguồn mặc định từ:
+3106 không kèm danh sách nguồn mặc định. Bạn tự thêm URL `sources.json` của mình trong ứng dụng. Ví dụ chỉ minh họa định dạng, không phải địa chỉ thật:
 
 ```text
-https://raw.githubusercontent.com/YangJiiii/3105-repo/main/sources.json
+https://example.com/3106/sources.json
 ```
 
 Định dạng catalog:
@@ -18,7 +18,7 @@ https://raw.githubusercontent.com/YangJiiii/3105-repo/main/sources.json
   "schemaVersion": 1,
   "sources": [
     "repositories/demo/repo.json",
-    "https://example.com/3105/repo.json"
+    "https://example.com/3106/repo.json"
   ]
 }
 ```
@@ -31,9 +31,9 @@ HTTPS và kiểm tra manifest như nguồn được thêm thủ công.
 ## Quy trình cài đặt
 
 1. Người dùng thêm URL đầy đủ của `repo.json` trong tab **Nguồn**.
-2. 3105 kiểm tra schema, URL, định danh, checksum và dải iOS.
-3. Khi cài, gói `.3105` hoặc `.tendies` được tải về tệp tạm theo trường `kind`.
-4. Patch `.3105` luôn được đối chiếu SHA-256 rồi kiểm tra UUID, trạng thái mật
+2. 3106 kiểm tra schema, URL, định danh, checksum và dải iOS.
+3. Khi cài, gói `.3106` hoặc `.tendies` được tải về tệp tạm theo trường `kind`.
+4. Patch `.3106` luôn được đối chiếu SHA-256 rồi kiểm tra UUID, trạng thái mật
    khẩu và bundle đích từ payload. Wallpaper `.tendies` được đối chiếu SHA-256,
    hoặc phải là URL Nugget-Wallpapers ghim vào commit GitHub 40 ký tự.
 5. Patch hợp lệ được chuyển vào thư viện patch. Wallpaper tiếp tục qua bộ kiểm
@@ -47,7 +47,7 @@ HTTPS và kiểm tra manifest như nguồn được thêm thủ công.
   "schemaVersion": 1,
   "identifier": "com.example.repository",
   "name": "Example Repository",
-  "description": "Các patch dành cho 3105",
+  "description": "Các patch dành cho 3106",
   "icon": "assets/repository.png",
   "packages": [
     {
@@ -70,7 +70,7 @@ HTTPS và kiểm tra manifest như nguồn được thêm thủ công.
         "assets/clean-layout-1.png",
         "assets/clean-layout-2.png"
       ],
-      "download": "packages/clean-layout.3105",
+      "download": "packages/clean-layout.3106",
       "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "size": 123456,
       "supportedOS": [
@@ -122,7 +122,7 @@ hiển thị mục **Mới nhất** theo đúng thứ tự thời gian. Gói kh�
 đa 10 gói; người dùng vẫn có thể xem toàn bộ tại Nguồn hoặc Tìm kiếm.
 
 `password` chỉ dành cho package `patch` và là trường tuỳ chọn. Nếu chủ repo
-chủ động công khai trường này, 3105 dùng đúng giá trị đó để tự mở khoá gói sau
+chủ động công khai trường này, 3106 dùng đúng giá trị đó để tự mở khoá gói sau
 khi tải; mật khẩu không được lưu lại, chỉ content key được giữ trong Keychain.
 Nếu gói có mật khẩu nhưng repo không khai báo `password`, ứng dụng mở màn hình
 nhập mật khẩu và hướng dẫn người dùng liên hệ chủ repo. Không đặt `password`
@@ -137,17 +137,17 @@ cho package `wallpaper`.
   commit GitHub 40 ký tự mới được phép bỏ trường này; file vẫn phải vượt qua
   toàn bộ bộ kiểm tra `.tendies` trước khi nhập.
 - `supportedOS`: ít nhất một dải tương thích nên được khai báo. Nếu bỏ trống,
-  3105 hiển thị trạng thái chưa xác định và không cho cài.
+  3106 hiển thị trạng thái chưa xác định và không cho cài.
 
 `packageID` và `bundleIdentifiers` không còn bắt buộc. Nguồn cũ vẫn có thể giữ
-hai trường này, nhưng 3105 coi file `.3105` đã tải xuống là dữ liệu chính xác:
+hai trường này, nhưng 3106 coi file `.3106` đã tải xuống là dữ liệu chính xác:
 UUID, trạng thái mật khẩu và bundle đích chỉ được xác nhận từ gói thật.
 
 ## Patch riêng tư
 
 Đặt `isPrivate` thành `true` để trang nguồn báo đây là patch riêng tư. Không cần
 đưa bundle đích vào metadata kho. Tệp, bundle và đường dẫn nằm trong payload đã
-mã hoá của `.3105`; ứng dụng chỉ đọc chúng sau khi người dùng mở khoá thành công.
+mã hoá của `.3106`; ứng dụng chỉ đọc chúng sau khi người dùng mở khoá thành công.
 
 ## Quy tắc an toàn
 
@@ -155,6 +155,6 @@ mã hoá của `.3105`; ứng dụng chỉ đọc chúng sau khi người dùng 
 - Không chấp nhận credentials trong URL, localhost, miền `.local` hay địa chỉ IP.
 - Redirect sang URL không đạt các điều kiện trên bị huỷ.
 - Metadata trùng `identifier`, SHA-256 sai hoặc dải iOS sai bị từ chối.
-- Patch không đúng checksum hoặc không có envelope `.3105` hợp lệ không được
+- Patch không đúng checksum hoặc không có envelope `.3106` hợp lệ không được
   chuyển vào patch engine. Wallpaper không đúng `.tendies`, vượt giới hạn hoặc
   có archive/descriptor không an toàn không được đưa vào **Đã cài**.
